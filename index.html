@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador de PIN</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@600;800&display=swap');
+
+  :root{
+    --bg:#0a0a0a; --card:#161616; --card2:#1c1c1c;
+    --acc:#e10600; --acc2:#ff3b30; --txt:#e5e5e5; --dim:#7a7a7a;
+    --err:#ff5252; --ok:#39d353; --line:#2a2a2a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    color:var(--txt);font-family:'Rajdhani',sans-serif;
+    background:
+      linear-gradient(rgba(10,10,10,.92),rgba(10,10,10,.96)),
+      repeating-linear-gradient(45deg,#000 0 10px,#0d0d0d 10px 20px);
+    background-attachment:fixed;
+  }
+  .card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg,var(--card),#0d0d0d);
+    padding:2rem;border-radius:6px;width:92%;max-width:460px;
+    border:1px solid var(--line);
+    border-top:4px solid var(--acc);
+    box-shadow:0 20px 50px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:6px;
+    background:repeating-linear-gradient(90deg,#fff 0 10px,#111 10px 20px);
+    opacity:.08;
+  }
+  h1,h2{
+    font-family:'Orbitron',sans-serif;font-size:1.15rem;margin:0 0 1.2rem;
+    text-align:center;letter-spacing:.06em;text-transform:uppercase;
+    color:#fff;
+  }
+  h1 span{color:var(--acc)}
+  input{width:100%;padding:.8rem 1rem;border-radius:4px;border:1px solid var(--line);
+    background:#0a0a0a;color:var(--txt);font-family:'Orbitron',sans-serif;font-size:1.05rem;
+    letter-spacing:.08em;outline:none}
+  input:focus{border-color:var(--acc)}
+  button{width:100%;margin-top:.8rem;padding:.85rem;border:none;border-radius:4px;
+    background:linear-gradient(180deg,var(--acc2),var(--acc));color:#fff;font-weight:700;
+    font-family:'Orbitron',sans-serif;font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;
+    cursor:pointer;box-shadow:0 4px 14px rgba(225,6,0,.35)}
+  button:hover{filter:brightness(1.1)}
+  button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  .result{margin-top:1.3rem;text-align:center;font-size:1.6rem;min-height:2.2rem;
+    font-family:'Orbitron',sans-serif;letter-spacing:.05em}
+  .ok{color:var(--ok);text-shadow:0 0 16px rgba(57,211,83,.4)}
+  .err{color:var(--err)}
+  .status{margin-top:.6rem;font-size:.75rem;color:var(--dim);text-align:center;min-height:1rem;
+    text-transform:uppercase;letter-spacing:.06em}
+  .tabs{display:flex;gap:.5rem;margin-bottom:1.2rem}
+  .tab{flex:1;padding:.55rem;text-align:center;border-radius:4px;cursor:pointer;
+    background:#0a0a0a;border:1px solid var(--line);font-size:.8rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+  .tab.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .hidden{display:none}
+  select{width:100%;padding:.6rem;border-radius:4px;border:1px solid var(--line);
+    background:#0a0a0a;color:var(--txt);margin-bottom:.8rem;font-family:'Rajdhani',sans-serif}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;max-height:320px;display:block;overflow-y:auto}
+  th,td{padding:.4rem .5rem;text-align:left;border-bottom:1px solid var(--line)}
+  th{position:sticky;top:0;background:var(--card2);text-transform:uppercase;font-size:.75rem;
+    letter-spacing:.05em;color:var(--dim)}
+  td:last-child{font-family:'Orbitron',sans-serif;color:var(--acc2)}
+  footer{margin-top:1.6rem;text-align:center;font-size:.78rem;color:var(--dim);
+    border-top:1px solid var(--line);padding-top:1rem}
+  footer a{color:var(--acc2);text-decoration:none;font-weight:600}
+  footer a:hover{text-decoration:underline}
+  .aviso{margin-top:.7rem;font-size:.68rem;color:#555;text-align:center;line-height:1.4}
+  .input-group{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+  .input-group .prefix{padding:.8rem .7rem;background:#000;color:var(--acc2);
+    font-family:'Orbitron',sans-serif;font-weight:700;user-select:none;border-right:1px solid var(--line)}
+  .input-group input{border:none;border-radius:0}
+  .input-group input:focus{border-color:transparent}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>FORD V SERIES</h1>
+  <h2>🔎 Buscador de PIN</h2>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="buscar">Buscar</div>
+    <div class="tab" data-tab="rangos">Ver por rangos</div>
+  </div>
+
+  <div id="panel-buscar">
+    <div class="input-group">
+      <span class="prefix">V</span>
+      <input id="codigo" placeholder="999007" autocomplete="off" inputmode="numeric" maxlength="6">
+    </div>
+    <button id="btn">Buscar</button>
+    <div id="resultado" class="result"></div>
+  </div>
+
+  <div id="panel-rangos" class="hidden">
+    <select id="selectRango"></select>
+    <table>
+      <thead><tr><th>Código</th><th>PIN</th></tr></thead>
+      <tbody id="tablaRangos"></tbody>
+    </table>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <footer>
+    Hecho con ❤️ por <a href="https://github.com/rasnerdev" target="_blank" rel="noopener">rasnerdev</a>
+    <p class="aviso"><strong>Aviso</strong>: Los códigos mostrados proceden de información pública disponible en Internet. Esta web no tiene relación con Ford Motor Company y no garantiza la exactitud de los datos.</p>
+  </footer>
+</div>
+
+<script>
+
+// --- Configuración ---
+const TAMANO_BLOQUE = 1000;      
+const NUM_TOTAL = 1000000;       
+const carpetaDatos = "";         
+
+const cacheFicheros = new Map(); 
+
+function pad6(n){ return String(n).padStart(6, '0'); }
+
+function nombreFicheroParaNumero(n){
+  const inicio = Math.floor(n / TAMANO_BLOQUE) * TAMANO_BLOQUE;
+  const fin = inicio + TAMANO_BLOQUE - 1;
+  return `${pad6(inicio)}_${pad6(fin)}.txt`;
+}
+
+function listaDeFicheros(){
+  const total = Math.ceil(NUM_TOTAL / TAMANO_BLOQUE);
+  const lista = [];
+  for(let i = 0; i < total; i++){
+    const inicio = i * TAMANO_BLOQUE;
+    const fin = inicio + TAMANO_BLOQUE - 1;
+    lista.push(`${pad6(inicio)}_${pad6(fin)}.txt`);
+  }
+  return lista;
+}
+
+function parseTexto(texto){
+  const entradas = [];
+  const lineas = texto.split('\n');
+  for(const linea of lineas){
+    const l = linea.trim();
+    if(!l) continue;
+    const idx = l.indexOf(':');
+    if(idx === -1) continue;
+    const claveRaw = l.slice(0, idx).trim();
+    const valor = l.slice(idx+1).trim();
+    entradas.push([claveRaw, valor]);
+  }
+  return entradas;
+}
+
+async function obtenerFichero(nombre){
+  if(cacheFicheros.has(nombre)) return cacheFicheros.get(nombre);
+  const res = await fetch(carpetaDatos + nombre);
+  if(!res.ok) throw new Error('No se pudo cargar ' + nombre);
+  const texto = await res.text();
+  const entradas = parseTexto(texto);
+  cacheFicheros.set(nombre, entradas);
+  return entradas;
+}
+
+// --- Buscador ---
+async function buscar(){
+  const input = document.getElementById('codigo');
+  const resultado = document.getElementById('resultado');
+  const status = document.getElementById('status');
+  resultado.classList.remove('ok','err');
+  status.classList.remove('err');
+  status.textContent = '';
+
+  const raw = input.value.trim();
+  const digitos = raw.match(/\d+/);
+  if(!digitos){
+    resultado.textContent = 'Introduce un código numérico';
+    resultado.classList.add('err');
+    return;
+  }
+  const n = parseInt(digitos[0], 10);
+  if(n < 0 || n >= NUM_TOTAL){
+    resultado.textContent = 'Código fuera de rango';
+    resultado.classList.add('err');
+    return;
+  }
+
+  const nombreFichero = nombreFicheroParaNumero(n);
+  resultado.textContent = 'Buscando...';
+  try{
+    const entradas = await obtenerFichero(nombreFichero);
+    const encontrada = entradas.find(([clave]) => parseInt(clave.match(/\d+/)?.[0] ?? 'NaN', 10) === n);
+    if(encontrada){
+      resultado.textContent = 'PIN: ' + encontrada[1];
+      resultado.classList.add('ok');
+    } else {
+      resultado.textContent = 'Código no encontrado';
+      resultado.classList.add('err');
+    }
+  }catch(e){
+    resultado.textContent = 'Error';
+    resultado.classList.add('err');
+    status.textContent = `No se pudo cargar ${nombreFichero}`;
+    status.classList.add('err');
+  }
+}
+
+document.getElementById('btn').addEventListener('click', buscar);
+document.getElementById('codigo').addEventListener('keydown', e => { if(e.key === 'Enter') buscar(); });
+document.getElementById('codigo').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+// --- Rangos ---
+function inicializarSelectorRangos(){
+  const select = document.getElementById('selectRango');
+  const ficheros = listaDeFicheros();
+  select.innerHTML = '<option value="">-- Selecciona un rango --</option>';
+  for(const nombre of ficheros){
+    const opt = document.createElement('option');
+    opt.value = nombre;
+    opt.textContent = nombre.replace('.txt','').replace('_', ' — ');
+    select.appendChild(opt);
+  }
+  select.addEventListener('change', async () => {
+    const nombre = select.value;
+    const tbody = document.getElementById('tablaRangos');
+    const status = document.getElementById('status');
+    if(!nombre){ tbody.innerHTML = ''; return; }
+    tbody.innerHTML = '<tr><td colspan="2">Cargando...</td></tr>';
+    try{
+      const entradas = await obtenerFichero(nombre);
+      tbody.innerHTML = entradas.map(([c,v]) => `<tr><td>V${c}</td><td>${v}</td></tr>`).join('');
+      status.textContent = '';
+    }catch(e){
+      tbody.innerHTML = '';
+      status.textContent = `No se pudo cargar ${nombre}`;
+      status.classList.add('err');
+    }
+  });
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const esBuscar = tab.dataset.tab === 'buscar';
+    document.getElementById('panel-buscar').classList.toggle('hidden', !esBuscar);
+    document.getElementById('panel-rangos').classList.toggle('hidden', esBuscar);
+  });
+});
+
+inicializarSelectorRangos();
+</script>
+</body>
+</html>
